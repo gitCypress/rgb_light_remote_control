@@ -78,7 +78,7 @@ namespace ProtocolHandler {
 
                 case 0x01: {
                     led_driver.setAll(64, 64, 64);
-                    break
+                    break;
                 }
 
                 default:
