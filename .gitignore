@@ -1,0 +1,116 @@
+############################ PlatformIO-ESP8266
+.pio/
+.vscode/
+
+############################ STM
+# CMake build directories
+build/
+cmake-build-*/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!cmake/
+
+# Compiled object files
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.su
+*.d
+
+# Linker output
+*.ilk
+*.exp
+
+# Debug files
+*.dSYM/
+*.dwarf
+
+# IDE specific files
+.idea/
+.vscode/
+*.code-workspace
+.settings/
+.project
+.cproject
+*.sublime-*
+
+# STM32CubeIDE
+.metadata/
+Debug/
+Release/
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.tmp
+
+# Logs
+*.log
+
+# Generated documentation
+html/
+latex/
+
+# JLink & OpenOCD
+JLink*.txt
+openocd.cfg
+
+# Backup files
+*.bak
+*.old
+*.orig
+*.ioc.old
+
+############################ Flutter
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio build artifacts
+android/app/debug
+android/app/profile
+android/app/release
