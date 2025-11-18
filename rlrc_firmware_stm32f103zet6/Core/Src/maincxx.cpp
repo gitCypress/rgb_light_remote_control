@@ -44,26 +44,3 @@ void maincxx() {
         }
     }
 }
-
-// TODO: 删掉这个测试函数
-void testLights() {
-    auto &led_driver = WS2812B::getInstance();
-
-    // 设置 (0,0) 为红色
-    led_driver.clear(); // 先清屏
-    led_driver.setPixel(0, 0, 128, 0, 0); // 128 亮度
-    led_driver.render(); // 渲染！
-    HAL_Delay(500); // 等待 500ms
-
-    // 设置 (0,1) 为绿色
-    led_driver.clear();
-    led_driver.setPixel(0, 1, 0, 128, 0);
-    led_driver.render();
-    HAL_Delay(500);
-
-    // 设置 (1,0) 为蓝色
-    led_driver.clear();
-    led_driver.setPixel(1, 0, 0, 0, 128);
-    led_driver.render();
-    HAL_Delay(500);
-}
