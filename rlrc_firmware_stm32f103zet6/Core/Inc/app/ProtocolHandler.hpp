@@ -4,6 +4,7 @@
 
 #pragma once
 #include <cstdint>
+#include <span>
 
 namespace ProtocolHandler {
 
@@ -20,10 +21,5 @@ namespace ProtocolHandler {
         LOG_MESSAGE = 0xFE,  // ESP8266 日志
     };
 
-    /**
-     * @brief 解析并执行二进制指令
-     * @param buffer 指向数据包负载的指针。为了方便，我们这里传入包含包头的完整 buffer
-     * @param len    数据包总长度
-     */
-    ErrorCode dispatch(const uint8_t *buffer, uint16_t len);
+    ErrorCode dispatch(std::span<const uint8_t> packet);
 } // namespace CommandParser

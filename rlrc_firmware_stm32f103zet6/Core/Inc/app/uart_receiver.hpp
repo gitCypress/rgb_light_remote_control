@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include "main.h"
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <span>
+#include "main.h"
 
 // 外部链接 CubeMX 生成的 USART3 句柄
 extern "C" UART_HandleTypeDef huart3;
@@ -23,7 +24,7 @@ public:
     /**
      * @brief 获取 UART_Receiver 的单例
      */
-    static UART_Receiver& getInstance();
+    static UART_Receiver &getInstance();
 
     /**
      * @brief 启动 DMA 和 IDLE 中断
@@ -39,17 +40,30 @@ public:
     /**
      * @brief 检查是否有新包，在 maincxx 轮询
      */
-    bool isPacketReady() const;
+    [[nodiscard]] bool isPacketReady() const;
 
     /**
      * @brief 获取数据包，在 maincxx 轮询
      * @param out_buffer 你的缓冲区，用于接收数据
      * @return 接收到的数据包长度 (字节)，如果为 0 则表示没有包
      */
-    uint16_t getPacket(uint8_t* out_buffer);
+    uint16_t getPacket(uint8_t *out_buffer);
 
-    UART_Receiver(const UART_Receiver&) = delete;
-    UART_Receiver& operator=(const UART_Receiver&) = delete;
+    /**
+     * @brief 高阶函数：如果有包，就调用回调处理
+     */
+    template<typename Func>
+    void handlePacket(Func callback) {
+        if (packet_ready.load()) {
+            const uint16_t len = packet_length.load(); // 获取长度
+            std::span<const uint8_t> view(packet_buffer.data(), len); // 创建视图
+            callback(view); // 调用回调
+            packet_ready.store(false); // 自动清理标志
+        }
+    }
+
+    UART_Receiver(const UART_Receiver &) = delete;
+    UART_Receiver &operator=(const UART_Receiver &) = delete;
 
 private:
     UART_Receiver() = default;
