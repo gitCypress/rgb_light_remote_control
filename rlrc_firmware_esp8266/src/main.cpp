@@ -54,7 +54,7 @@ void setup() {
 
     // 打印自己的 IP 地址
     Log::print("IP Address: ");
-    Log::println(WiFi.localIP());
+    Log::println(WiFi.localIP().toString());
 }
 
 void loop() {

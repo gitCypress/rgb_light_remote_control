@@ -1,50 +1,72 @@
 #pragma once
 
 #include <Arduino.h>
+#include "Packet.hpp"
+#include <PacketSerial.h>
 #include <utility>
 
-#include "Packet.hpp"
-
 template<typename T>
-concept SerialPrintable = requires(HardwareSerial &serial, T &&message) {
-    { serial.print(std::forward<T>(message)) };
-};
+concept SerialPrintable =
+    requires(HardwareSerial& serial, T&& message) {
+        { serial.print(std::forward<T>(message)) };
+    };
 
 namespace Log {
-    template<SerialPrintable T>
-    void print(T &&message) {
-        Serial.write(Packet::LOG_HEADER);
-        Serial.print(std::forward<T>(message));
+
+    // --- [私有] 核心辅助函数 ---
+    // 负责：加包头 -> COBS编码 -> 发送
+    inline void sendEncodedPacket(const uint8_t* payload, size_t length) {
+        // 1. 准备缓冲区: [Header] + [Payload]
+        // 256 字节通常够日志用了，static 避免频繁栈分配 (ESP8266 是单线程的，安全)
+        static uint8_t packetBuf[256];
+
+        // 截断保护
+        if (length > 254) length = 254;
+
+        packetBuf[0] = Packet::LOG_HEADER;
+        memcpy(&packetBuf[1], payload, length);
+
+        // 2. 使用 PacketSerial 进行 COBS 编码并发送
+        // PacketSerial 对象很轻量，这就相当于一个包装器
+        PacketSerial packetSerial;
+        packetSerial.setStream(&Serial);
+
+        // send() 会自动：COBS编码 -> 发送 -> 发送0x00包尾
+        packetSerial.send(packetBuf, length + 1);
     }
 
-    template<SerialPrintable T>
-    void println(T &&message) {
-        Serial.write(Packet::LOG_HEADER);
-        Serial.println(std::forward<T>(message));
+    // --- 重载 1: 统一处理模板类型 (print) ---
+    void print(SerialPrintable auto&& message) {
+        // 将任意类型转换为 String，以便获取底层的字节数组
+        String s = String(std::forward<decltype(message)>(message));
+        sendEncodedPacket(reinterpret_cast<const uint8_t *>(s.c_str()), s.length());
     }
 
+    // --- 重载 2: 统一处理模板类型 (println) ---
+    void println(SerialPrintable auto&& message) {
+        String s = String(std::forward<decltype(message)>(message));
+        s += "\n"; // 手动追加换行符
+        sendEncodedPacket(reinterpret_cast<const uint8_t *>(s.c_str()), s.length());
+    }
+
+    // --- 重载 3: 空行 ---
     inline void println() {
-        Serial.write(Packet::LOG_HEADER);
-        Serial.println();
+        sendEncodedPacket(reinterpret_cast<const uint8_t *>("\n"), 1);
     }
 
+    // --- 重载 4: printf ---
     inline void printf(const char* format, ...) __attribute__((format(printf, 1, 2)));
-    inline void printf(const char* format, ...) {
-        // 1. 在栈上创建一个合理大小的缓冲区
-        char buffer[256]; // 256 字节的日志缓冲区
 
-        // 2. 获取可变参数列表
+    inline void printf(const char* format, ...) {
+        char buffer[256];
         va_list args;
         va_start(args, format);
-
-        // 3. 安全地将格式化字符串写入缓冲区
-        vsnprintf(buffer, sizeof(buffer), format, args);
-
-        // 4. 清理可变参数
+        int len = vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
 
-        // 5. (关键) 调用我们自己的 Log::print()
-        //    它会自动处理 0xFE 包头！
-        Log::print(buffer);
+        if (len > 0) {
+            sendEncodedPacket(reinterpret_cast<const uint8_t *>(buffer), len);
+        }
     }
-}; // namespace Log
+
+} // namespace Log
