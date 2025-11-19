@@ -64,6 +64,7 @@ class LedMatrixService {
   }
 
   /// [私有] 原始的发送方法
+  /// cobs 编码将在这里进行
   void _send(Uint8List data) {
     if (_socket == null) {
       print("Socket not connected. Can't send data.");
@@ -71,7 +72,8 @@ class LedMatrixService {
       return;
     }
     try {
-      _socket?.add(data);
+      final encodedData = _encoder.applyCobs(data);  // cobs
+      _socket?.add(encodedData);
     } catch (e) {
       print("Socket send error: $e");
     }

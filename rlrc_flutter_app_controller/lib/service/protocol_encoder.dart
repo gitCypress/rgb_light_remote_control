@@ -46,4 +46,42 @@ class ProtocolEncoder {
 
     return builder.toBytes();
   }
+
+  /// COBS 编码函数
+  /// 将任意二进制数据编码为不含 0x00 的数据，并在末尾补 0x00
+  Uint8List applyCobs(Uint8List data) {
+    List<int> buffer = [];
+    int blockStart = 0;
+    int ptr = 0;
+
+    // 预留第一个 code 的位置
+    buffer.add(0);
+
+    while (ptr < data.length) {
+      if (data[ptr] == 0) {
+        // 遇到 0，计算 offset 填入 blockStart
+        buffer[blockStart] = (buffer.length - blockStart);
+        blockStart = buffer.length;
+        buffer.add(0); // 预留下一个 code
+      } else {
+        buffer.add(data[ptr]);
+      }
+      ptr++;
+
+      // 防止 block 过长 (COBS 限制 254)
+      if (buffer.length - blockStart >= 255) {
+        buffer[blockStart] = 255;
+        blockStart = buffer.length;
+        buffer.add(0);
+      }
+    }
+
+    // 填入最后一个 code
+    buffer[blockStart] = (buffer.length - blockStart);
+
+    // !!! 关键：添加作为包尾的 0x00 !!!
+    buffer.add(0x00);
+
+    return Uint8List.fromList(buffer);
+  }
 }
