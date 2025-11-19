@@ -75,14 +75,8 @@ namespace ProtocolHandler {
                     break;
 
                 }
-
-                case 0x01: {
-                    led_driver.setAll(64, 64, 64);
-                    break;
-                }
-
                 default:
-                    // TODO: Toogle 只处理 0x00 和 0x01 不太合理
+                    led_driver.setAll(64, 64, 64);
                     break;
             }
             led_driver.render();
