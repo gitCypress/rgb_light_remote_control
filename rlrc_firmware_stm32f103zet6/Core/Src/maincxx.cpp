@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdio>
 #include "ProtocolHandler.hpp"
+#include "esp8266.hpp"
 #include "uart_receiver.hpp"
 #include "ws2812b.hpp"
 
@@ -17,6 +18,11 @@ void maincxx() {
     auto &uart_receiver = UART_Receiver::getInstance();
     uart_receiver.init();
     printf("[INFO] UART3 Receiver Initialized.\r\n");
+
+    // 启动 ESP8266
+    HAL_Delay(100);
+    esp8266::enable();
+    printf("[INFO] ESP8266 enabled.\r\n");
 
     while (true) {
         auto phErr = ProtocolHandler::ErrorCode::OK;
