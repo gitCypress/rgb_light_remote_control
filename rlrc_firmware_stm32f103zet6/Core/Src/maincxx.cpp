@@ -6,9 +6,7 @@
 #include "uart_receiver.hpp"
 #include "ws2812b.hpp"
 
-// --- C 语言回调跳板 ---
 extern "C" void ws2812b_dma_complete_callback() { WS2812B::getInstance().on_dma_transfer_complete(); }
-extern "C" void usart3_irq_trampoline() { UART_Receiver::getInstance().uart_irq_handler(); }
 
 // --- 主程序入口 ---
 void maincxx() {
@@ -25,22 +23,6 @@ void maincxx() {
     printf("[INFO] ESP8266 enabled.\r\n");
 
     while (true) {
-        auto phErr = ProtocolHandler::ErrorCode::OK;
-
-        // 检查 UART 包
-        uart_receiver.handlePacket([&](auto packet) {
-            phErr = ProtocolHandler::dispatch(packet);
-        });
-
-        switch (phErr) {
-            case ProtocolHandler::ErrorCode::OK:
-                break;
-            case ProtocolHandler::ErrorCode::INVALID_BUFFER_LENGTH:
-                printf("[ERROR] ProtocolHandler-INVALID_BUFFER_LENGTH.");
-                break;
-            case ProtocolHandler::ErrorCode::UNKNOWN_COMMAND:
-                printf("[ERROR] ProtocolHandler-UNKNOWN_COMMAND.");
-                break;
-        }
+        ProtocolHandler::getInstance().update();
     }
 }
