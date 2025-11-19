@@ -21,6 +21,7 @@ void setup() {
 
     Ticker ticker;
     WiFiManager wm;
+    wm.setDebugOutput(false);
     wm.setConfigPortalTimeout(config::wmPortalTimeout); // AP 门户启动后的配置超时时间
     wm.setAPCallback([&](WiFiManager *myWiFiManager) {
         Log::println("Entered Config Mode.");
