@@ -17,6 +17,7 @@ void setup() {
     // 2. 测试时在 Serial Monitor 中打印调试信息
     Serial.begin(config::serialBaudRate);
 
+    delay(2000);
     Log::println("ESP8266 WiFi-to-UART Bridge");
 
     Ticker ticker;
@@ -46,12 +47,11 @@ void setup() {
     ticker.detach(); // 停止闪烁
     digitalWrite(LED_BUILTIN, HIGH); // LED 常灭 (NodeMCU 是低电平点亮)
 
-    Log::println();
     Log::println("WiFi Connected!");
 
     // 启动 TCP 服务器
     tcpServer.begin();
-    Log::printf("TCP Server started on port %d\n\r", config::tcpPort);
+    Log::printf("TCP Server started on port %d", config::tcpPort);
 
     // 打印自己的 IP 地址
     Log::print("IP Address: ");
