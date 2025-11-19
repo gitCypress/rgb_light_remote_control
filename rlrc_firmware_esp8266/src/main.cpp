@@ -1,70 +1,81 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <Ticker.h>
 
-// --- 1. WiFi 配置 ---
-// !!! 修改为你自己的 WiFi !!!
-const char* ssid = "Meizu 20 Pro";
-const char* password = "9876543210";
+#include "Log.hpp"
+#include "WiFiManager.h"
+#include "config.hpp"
 
-// --- 2. TCP 服务器配置 ---
-constexpr uint16_t TCP_PORT = 8080;
-WiFiServer tcpServer(TCP_PORT); // 创建 TCP 服务器对象
-WiFiClient tcpClient;          // 创建一个全局客户端对象
+// TCP server & client 对象
+WiFiServer tcpServer(config::tcpPort);
+WiFiClient tcpClient;
 
 // --- 3. 设置 (Setup) ---
 void setup() {
-  // 启动 串口 (Serial)，用于转发数据给 STM32
-  // 并且也用于在 "Serial Monitor" 中打印调试信息
-  Serial.begin(115200);
-  Serial.println("\n\rESP8266 WiFi-to-UART Bridge");
+    // 串口
+    // 1. 转发数据给 STM32
+    // 2. 测试时在 Serial Monitor 中打印调试信息
+    Serial.begin(config::serialBaudRate);
 
-  // --- 连接 WiFi ---
-  Serial.printf("Connecting to %s...", ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\n\rWiFi Connected!");
+    Log::println("ESP8266 WiFi-to-UART Bridge");
 
-  // --- 启动 TCP 服务器 ---
-  tcpServer.begin();
-  Serial.printf("TCP Server started on port %d\n\r", TCP_PORT);
+    Ticker ticker;
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(config::wmPortalTimeout); // AP 门户启动后的配置超时时间
+    wm.setAPCallback([&](WiFiManager *myWiFiManager) {
+        Log::println("Entered Config Mode.");
+        Log::printf("AP SSID: %s\n", myWiFiManager->getConfigPortalSSID().c_str());
+        Log::println("IP: 192.168.4.1");
 
-  // --- 关键：打印自己的 IP 地址 ---
-  // (你需要把这个 IP 告诉 Flutter APP)
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
+        // 开始闪烁 LED (每 500ms 一次)
+        ticker.attach_ms(500, [] {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        });
+    });
+
+    // 自动连接
+    if (!wm.autoConnect("AutoConnectAP_RLRC_ESP8266EX")) {
+        // 配置超时或失败时
+        Log::println("Failed to connect and hit timeout. Rebooting...");
+        delay(3000);
+        EspClass::restart(); // 重启
+        delay(5000);
+    }
+
+    ticker.detach(); // 停止闪烁
+    digitalWrite(LED_BUILTIN, HIGH); // LED 常灭 (NodeMCU 是低电平点亮)
+
+    Log::println();
+    Log::println("WiFi Connected!");
+
+    // 启动 TCP 服务器
+    tcpServer.begin();
+    Log::printf("TCP Server started on port %d\n\r", config::tcpPort);
+
+    // 打印自己的 IP 地址
+    Log::print("IP Address: ");
+    Log::println(WiFi.localIP());
 }
 
-// --- 4. 主循环 (Loop) ---
 void loop() {
-  // --- 检查是否有新的 APP 连接 ---
-  if (!tcpClient.connected()) {
-    // 如果没有客户端连接，则尝试接受一个新连接
-    tcpClient = tcpServer.accept();
-    if (tcpClient) {
-      Serial.println("New client connected!");
-    }
-  }
-
-  // 如果客户端已连接...
-  if (tcpClient.connected()) {
-
-    // --- 检查 APP (TCP) 是否发来数据 ---
-    while (tcpClient.available()) {
-      // 从 TCP 读取数据
-      uint8_t data = tcpClient.read();
-
-      // !!! 核心网桥逻辑 !!!
-      // 将数据原样通过 串口 (Serial) 转发给 STM32
-      Serial.write(data);
+    // 检查是否有新的 APP 连接
+    if (!tcpClient.connected()) {
+        // 如果没有客户端连接，则尝试接受一个新连接
+        tcpClient = tcpServer.accept();
+        if (tcpClient) {
+            Log::println("New client connected!");
+        }
     }
 
-    // (可选) 检查 STM32 是否发来数据，并发回 APP
-    // while (Serial.available()) {
-    //    uint8_t data = Serial.read();
-    //    tcpClient.write(data);
-    // }
-  }
+    // 如果客户端已连接
+    if (tcpClient.connected()) {
+
+        // 检查 APP 是否发来数据
+        while (tcpClient.available()) {
+            // 从 TCP 读取数据
+            // 这里 ESP32 充当一个透明网桥，它不关心从 TCP 获取的流数据如何截止
+            // 只负责将数据原模原样通过串口转发给 STM32
+            Serial.write(tcpClient.read());
+        }
+    }
 }
