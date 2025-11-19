@@ -20,7 +20,7 @@ void maincxx() {
     printf("[INFO] UART3 Receiver Initialized.\r\n");
 
     // 启动 ESP8266
-    HAL_Delay(100);
+    HAL_Delay(10000);
     esp8266::enable();
     printf("[INFO] ESP8266 enabled.\r\n");
 
