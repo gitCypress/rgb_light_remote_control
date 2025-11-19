@@ -44,14 +44,14 @@ namespace Log {
 
     // --- 重载 2: 统一处理模板类型 (println) ---
     void println(SerialPrintable auto&& message) {
-        String s = String(std::forward<decltype(message)>(message));
-        s += "\n"; // 手动追加换行符
+        auto s = String(std::forward<decltype(message)>(message));
+        s += "\n\r"; // 手动追加换行符
         sendEncodedPacket(reinterpret_cast<const uint8_t *>(s.c_str()), s.length());
     }
 
     // --- 重载 3: 空行 ---
     inline void println() {
-        sendEncodedPacket(reinterpret_cast<const uint8_t *>("\n"), 1);
+        sendEncodedPacket(reinterpret_cast<const uint8_t *>("\n\r"), 1);
     }
 
     // --- 重载 4: printf ---
@@ -61,7 +61,7 @@ namespace Log {
         char buffer[256];
         va_list args;
         va_start(args, format);
-        int len = vsnprintf(buffer, sizeof(buffer), format, args);
+        const int len = vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
 
         if (len > 0) {
