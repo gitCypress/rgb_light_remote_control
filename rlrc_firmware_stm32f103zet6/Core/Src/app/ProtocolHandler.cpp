@@ -17,28 +17,28 @@ void ProtocolHandler::update() {
         const uint8_t cobsByte = uart.readCobs();
 
         if (cobsByte == COBS_TAIL) {
-            if (_encodedIndex > 0) {
-                size_t decodedLen = Cobs::decode({_encodedBuffer.data(), _encodedIndex}, _decodedBuffer.data());
+            if (_bufIndex > 0) {
+                auto decodedBuffer = Cobs::decode({_buffer.data(), _bufIndex});
 
-                // 2. 分发解码后的数据
-                if (decodedLen > 0) {
-                    dispatchDecoded({_decodedBuffer.data(), decodedLen});
+                // 分发解码后的数据
+                if (!decodedBuffer.empty()) {
+                    dispatchDecoded(decodedBuffer);
                 }
 
                 // 3. 重置索引，准备接收下一包
-                _encodedIndex = 0;
+                _bufIndex = 0;
             }
         } else {
             // ==============================
             // 还在接收中，存入缓冲区
             // ==============================
-            if (_encodedIndex < _encodedBuffer.size()) {
-                _encodedBuffer[_encodedIndex++] = cobsByte;
+            if (_bufIndex < _buffer.size()) {
+                _buffer[_bufIndex++] = cobsByte;
             } else {
                 // 缓冲区溢出保护：
                 // 如果一包数据超过 256 字节还没遇到 0x00，说明出错了。
                 // 我们清空缓冲区，重新开始寻找下一个 0x00。
-                _encodedIndex = 0;
+                _bufIndex = 0;
                 printf("[ERROR] COBS Buffer Overflow! Dropping packet.\r\n");
             }
         }

@@ -27,7 +27,7 @@ uint16_t UART_Receiver::available() const {
 uint8_t UART_Receiver::readCobs() {
     if (available() == 0) return 0;
 
-    uint8_t byte = rx_buffer[tail_ptr];
+    const uint8_t byte = rx_buffer[tail_ptr];
 
     // 推进读指针，并处理回环
     tail_ptr++;

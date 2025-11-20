@@ -35,12 +35,8 @@ private:
     void handleToggle(std::span<const uint8_t> payload);
     void handleLog(std::span<const uint8_t> payload);
 
-    // 1. 接收缓冲区 (存放带有 COBS 编码的原始数据)
-    // 256 字节足够容纳日志和指令
-    std::array<uint8_t, 256> _encodedBuffer{};
-    size_t _encodedIndex = 0;
-
-    // 2. 解码缓冲区 (存放还原后的数据)
-    std::array<uint8_t, 256> _decodedBuffer{};
+    // 帧数据缓冲区
+    std::array<uint8_t, 256> _buffer{};
+    size_t _bufIndex = 0;
 };
 
