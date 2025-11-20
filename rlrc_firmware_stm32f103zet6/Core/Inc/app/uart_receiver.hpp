@@ -23,7 +23,7 @@ public:
      * @brief 从缓冲区读取一个字节 (并推进读指针)
      * @return 读取的字节，如果缓冲区空则返回 0
      */
-    uint8_t read();
+    uint8_t readCobs();
 
     /**
      * @brief 查看下一个字节但不取出 (Peek)
