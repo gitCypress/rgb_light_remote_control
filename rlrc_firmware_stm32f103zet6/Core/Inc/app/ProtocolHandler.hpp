@@ -21,7 +21,6 @@ public:
 
 private:
     enum Header : uint8_t {
-        COBS_TAIL = 0x00,
         CMD_SET_PIXEL = 0x01,
         CMD_TOGGLE = 0x03,
         CMD_LOG = 0xFE,

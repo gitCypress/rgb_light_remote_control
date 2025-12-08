@@ -18,6 +18,7 @@
 #include <span>
 
 namespace Cobs {
+    constexpr auto TAIL = 0x00;
     /**
      * @brief COBS 原地解码
      * @param buffer 存储结果的缓冲区 (输入时不含分界符)
@@ -40,7 +41,7 @@ namespace Cobs {
 
             // 如果 Code < 0xFF，且没读到流的末尾，说明这里原本有个 0
             if (code < 0xFF && read_index < buffer.size()) {
-                buffer[write_index++] = 0;
+                buffer[write_index++] = TAIL;
             }
         }
 
