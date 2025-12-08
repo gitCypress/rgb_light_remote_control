@@ -26,7 +26,26 @@ void maincxx() {
     // __HAL_UART_CLEAR_FEFLAG(&huart3);  // 清除帧错误
     // __HAL_UART_CLEAR_IDLEFLAG(&huart3);// 清除空闲标志
 
+    // 存储 uart_receiver 获得的包
+    constexpr uint16_t scratchBufferSize = 256;
+    std::array<uint8_t, scratchBufferSize> scratchBuffer{};
+
     while (true) {
-        ProtocolHandler::getInstance().update();
+        // 从接收器获取一个完整的包
+        auto packet = uart_receiver.tryGetPacket(scratchBuffer);
+
+        // 包不为空时，分发处理
+        if constexpr (!scratchBuffer.empty()) {
+            switch (ProtocolHandler::dispatch(packet)) {
+                case ProtocolHandler::ErrorCode::OK:
+                    break;
+                case ProtocolHandler::ErrorCode::INVALID_BUFFER_LENGTH:
+                    printf("Invalid buffer length.");
+                    break;
+                case ProtocolHandler::ErrorCode::UNKNOWN_COMMAND:
+                    printf("Unknown command.");
+                    break;
+            }
+        }
     }
 }

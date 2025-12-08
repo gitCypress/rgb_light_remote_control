@@ -1,41 +1,68 @@
+// //
+// // Created by 27301 on 2025/11/18.
+// //
 //
-// Created by 27301 on 2025/11/18.
+// #pragma once
+// #include <cstdint>
+// #include <span>
 //
+// class ProtocolHandler {
+// public:
+//     static ProtocolHandler& getInstance();
+//
+//     ProtocolHandler(const ProtocolHandler&) = delete;
+//     ProtocolHandler& operator=(const ProtocolHandler&) = delete;
+//
+//     /**
+//      * @brief 核心驱动函数
+//      * 从 UART RingBuffer 读取数据 -> 遇到 0x00 -> COBS 解码 -> 执行
+//      */
+//     void update();
+//
+// private:
+//     enum Header : uint8_t {
+//         CMD_SET_PIXEL = 0x01,
+//         CMD_TOGGLE = 0x03,
+//         CMD_LOG = 0xFE,
+//     };
+//
+//     ProtocolHandler() = default;
+//
+//     void dispatchDecoded(std::span<const uint8_t> packet);
+//
+//     void handleSetPixel(std::span<const uint8_t> payload);
+//     void handleToggle(std::span<const uint8_t> payload);
+//     void handleLog(std::span<const uint8_t> payload);
+//
+//     // 帧数据缓冲区
+//     std::array<uint8_t, 256> _buffer{};
+//     size_t _bufIndex = 0;
+// };
 
 #pragma once
 #include <cstdint>
 #include <span>
 
-class ProtocolHandler {
-public:
-    static ProtocolHandler& getInstance();
+namespace ProtocolHandler {
 
-    ProtocolHandler(const ProtocolHandler&) = delete;
-    ProtocolHandler& operator=(const ProtocolHandler&) = delete;
-
-    /**
-     * @brief 核心驱动函数
-     * 从 UART RingBuffer 读取数据 -> 遇到 0x00 -> COBS 解码 -> 执行
-     */
-    void update();
-
-private:
-    enum Header : uint8_t {
-        CMD_SET_PIXEL = 0x01,
-        CMD_TOGGLE = 0x03,
-        CMD_LOG = 0xFE,
+    enum class ErrorCode {
+        OK,
+        INVALID_BUFFER_LENGTH,
+        UNKNOWN_COMMAND,
     };
 
-    ProtocolHandler() = default;
+    enum PacketType : std::uint8_t {
+        CMD_SET_PIXEL = 0x01,
+        CMD_SET_FRAME = 0x02,
+        CMD_TOGGLE    = 0x03,
+        MSG_LOG   = 0xFE,
+    };
 
-    void dispatchDecoded(std::span<const uint8_t> packet);
+    /**
+     * @brief 分发处理已解码的数据包
+     * @param packet 已经解码好的、干净的数据包 (不含 COBS 0x00, 不含 Overhead 字节)
+     */
+    ErrorCode dispatch(std::span<const uint8_t> packet);
 
-    void handleSetPixel(std::span<const uint8_t> payload);
-    void handleToggle(std::span<const uint8_t> payload);
-    void handleLog(std::span<const uint8_t> payload);
-
-    // 帧数据缓冲区
-    std::array<uint8_t, 256> _buffer{};
-    size_t _bufIndex = 0;
-};
+}
 
