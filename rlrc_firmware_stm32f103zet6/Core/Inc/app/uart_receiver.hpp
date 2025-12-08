@@ -1,42 +1,43 @@
 #pragma once
-#include "main.h"
 #include <array>
 #include <cstdint>
+#include <span>
+
+#include "main.h"
 
 extern "C" UART_HandleTypeDef huart3;
 
 class UART_Receiver {
 public:
-    // 缓冲区加大到 1KB 或 2KB，为摄像头数据和突发日志做准备
     static constexpr uint16_t RX_BUFFER_SIZE = 2048;
 
-    static UART_Receiver& getInstance();
+    static UART_Receiver &getInstance();
 
+    /**
+     * 启动 DMA 从 USART3 外设向 ringBuffer 的搬运过程。
+     */
     void init();
 
     /**
-     * @brief 检查缓冲区中有多少字节等待处理
+     * @brief 尝试获取一个完整的解码包
+     * * @param output_buffer [输入/输出] 调用者提供的临时工作区。
+     * 函数会将原始数据拷贝到这里，并原地解码。
+     * @return std::span<uint8_t> 解码后的有效数据视图。
+     * 如果没收到完整包，返回空 span (size=0)。
      */
-    [[nodiscard]] uint16_t available() const;
-
-    /**
-     * @brief 从缓冲区读取一个字节 (并推进读指针)
-     * @return 读取的字节，如果缓冲区空则返回 0
-     */
-    uint8_t readCobs();
-
-    /**
-     * @brief 查看下一个字节但不取出 (Peek)
-     */
-    [[nodiscard]] uint8_t peek() const;
+    std::span<uint8_t> tryGetPacket(std::span<uint8_t> output_buffer);
 
 private:
     UART_Receiver() = default;
-    
-    // DMA 直接写入的环形缓冲区
-    std::array<uint8_t, RX_BUFFER_SIZE> rx_buffer{};
-    
-    // 我们的“读”指针 (软件维护)
-    // "写"指针由硬件 DMA (CNDTR) 维护
-    uint16_t tail_ptr = 0;
+
+    [[nodiscard]] uint16_t aviliable() const;
+
+    /**
+     * @brief 写指针。计算自 DMA CNDTR
+     */
+    [[nodiscard]] uint16_t head() const;
+
+    uint16_t tail = 0; // 读指针
+
+    std::array<uint8_t, RX_BUFFER_SIZE> ringBuffer{}; // 环形缓冲区，DMA 负责生产
 };
