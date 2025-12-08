@@ -35,7 +35,7 @@ void maincxx() {
         auto packet = uart_receiver.tryGetPacket(scratchBuffer);
 
         // 包不为空时，分发处理
-        if constexpr (!scratchBuffer.empty()) {
+        if (!packet.empty()) {
             switch (ProtocolHandler::dispatch(packet)) {
                 case ProtocolHandler::ErrorCode::OK:
                     break;
