@@ -5,17 +5,16 @@
 #include <cstring>
 
 namespace ProtocolHandler {
-
-    // --- 前向声明 (参数改为 span) ---
+    // 前向声明
     static ErrorCode handleLog(std::span<const uint8_t> payload);
     static ErrorCode handleSetPixel(std::span<const uint8_t> payload);
     static ErrorCode handleToggle(std::span<const uint8_t> payload);
 
     // --- 核心分发函数 ---
-    ErrorCode dispatch(std::span<const uint8_t> packet) {
+    ErrorCode dispatch(const std::span<const uint8_t> packet) {
         if (packet.empty()) return ErrorCode::INVALID_BUFFER_LENGTH;
 
-        uint8_t header = packet[0];
+        const uint8_t header = packet[0];
 
         // payload 是除去 header 剩下的部分
         // 如果 packet 只有一个字节(只有header)，subspan(1) 会返回空视图，这是安全的

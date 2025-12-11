@@ -18,9 +18,10 @@ void UART_Receiver::init() {
 std::span<uint8_t> UART_Receiver::tryGetPacket(std::span<uint8_t> output_buffer) {
     const uint16_t count = aviliable();
 
-    // 这里错误处理后面引入专门的结构体来做最合适，但是这里为了效率先选择日志报错
-    // TODO: 添加报错日志
-    if (count == 0) return {};
+    // 没有数据
+    if (count == 0) {
+        return {};
+    };
 
     // 在 RingBuffer 中寻找包尾
     int32_t tailOffset = -1;
