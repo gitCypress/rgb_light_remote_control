@@ -1,6 +1,5 @@
 #include "ProtocolHandler.hpp"
 #include "ws2812b.hpp"
-#include "uart_receiver.hpp" // 仅为了获取 PACKET_BUFFER_SIZE 常量(如果日志需要)
 #include <cstdio>
 #include <cstring>
 
@@ -41,6 +40,17 @@ namespace ProtocolHandler {
         led.render();
 
         printf("[ESP->BIN] SetPixel (%d,%d)\r\n", payload[0], payload[1]);
+        return ErrorCode::OK;
+    }
+
+    ErrorCode handleSetFrame(const std::span<const uint8_t> payload) {
+        if (payload.size() != WS2812B::LED_COUNT * 3) return ErrorCode::INVALID_BUFFER_LENGTH;
+
+        auto& led = WS2812B::getInstance();
+
+        led.setFrame(payload);
+        led.render();
+
         return ErrorCode::OK;
     }
 
