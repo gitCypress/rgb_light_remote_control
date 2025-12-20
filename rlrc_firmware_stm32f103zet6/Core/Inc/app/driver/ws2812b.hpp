@@ -5,6 +5,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint> // uint8_t, uint16_t...
+#include <span>
 
 // 外部链接 CubeMX 生成的 TIM1 句柄
 extern "C" TIM_HandleTypeDef htim1;
@@ -14,9 +15,10 @@ public:
     // 错误代码
     enum class ErrorCode : uint8_t {
         NONE = 0,
-        RENDER_BUSY,      // render() 调用太快，上一帧未完成
+        RENDER_BUSY, // render() 调用太快，上一帧未完成
         HAL_START_FAILED, // HAL_TIM_PWM_Start_DMA 失败
-        INVALID_COORDS    // setPixel() 坐标越界
+        INVALID_COORDS, // setPixel() 坐标越界
+        INVALID_FRAME_SIZE,  // setFrame() 帧数据长度异常
     };
 
     // 灯珠数量
@@ -37,7 +39,12 @@ public:
     // 灯数 * 24 bit + RESET
     static constexpr uint16_t PWM_BUFFER_SIZE = (LED_COUNT * BITS_PER_LED) + RESET_PULSES;
 
-    static WS2812B& getInstance();
+    static WS2812B &getInstance();
+
+    /**
+     * @brief 将所有像素设为黑色 (关闭)
+     */
+    void clear();
 
     /**
      * @brief 设置单个像素的颜色 (颜色存储在内部缓冲区)
@@ -50,11 +57,19 @@ public:
     void setPixel(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b);
 
     /**
-     * @brief 将所有像素设为黑色 (关闭)
+     * 将所有像素设为同一颜色
+     * @param r 红色 (0-255)
+     * @param g 绿色 (0-255)
+     * @param b 蓝色 (0-255)
      */
-    void clear();
-
     void setAll(uint8_t r, uint8_t g, uint8_t b);
+
+    /**
+     * @brief 批量设置所有像素颜色 (帧刷新)
+     * @param frameData 原始 RGB 数据流 (R, G, B, R, G, B...)
+     * 长度必须等于 LED_COUNT * 3
+     */
+    void setFrame(std::span<const uint8_t> frameData);
 
     /**
      * @brief 渲染
@@ -73,8 +88,9 @@ public:
      */
     ErrorCode getLastError();
 
-    WS2812B(const WS2812B&) = delete;
-    WS2812B& operator=(const WS2812B&) = delete;
+    WS2812B(const WS2812B &) = delete;
+    WS2812B &operator=(const WS2812B &) = delete;
+
 private:
     WS2812B() = default;
     ~WS2812B() = default;
@@ -88,6 +104,6 @@ private:
     // (25 * 24 + 50) * 2 字节 = 1300 字节 (uint16_t)
     std::array<uint16_t, PWM_BUFFER_SIZE> pwm_buffer{};
 
-    std::atomic_bool dma_transfer_complete_flag = true;   // 初始状态为「已完成」
-    std::atomic<ErrorCode> last_error{ErrorCode::NONE};  // 错误状态变量
+    std::atomic_bool dma_transfer_complete_flag = true; // 初始状态为「已完成」
+    std::atomic<ErrorCode> last_error{ErrorCode::NONE}; // 错误状态变量
 };

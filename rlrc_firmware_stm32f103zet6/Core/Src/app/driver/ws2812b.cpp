@@ -1,5 +1,7 @@
 #include "ws2812b.hpp"
 
+#include <cstring>
+
 WS2812B & WS2812B::getInstance() {
     static WS2812B instance;
     return instance;
@@ -28,6 +30,19 @@ void WS2812B::setAll(uint8_t r, uint8_t g, uint8_t b) {
         led_data[i][1] = g;
         led_data[i][2] = b;
     }
+}
+
+// TODO：在这里负责将一维数据转换成二维有点奇怪，后面考虑怎么优化
+void WS2812B::setFrame(std::span<const uint8_t> frameData) {
+    // 数据长度是否符合预期 (LED 数量 * 3)
+    if (frameData.size() != LED_COUNT * 3) {
+        last_error.store(ErrorCode::INVALID_FRAME_SIZE);
+        return;
+    }
+
+    // 拷贝到新数组
+    uint8_t* dest_ptr = &led_data[0][0];
+    std::copy(frameData.begin(), frameData.end(), dest_ptr);
 }
 
 void WS2812B::render() {
