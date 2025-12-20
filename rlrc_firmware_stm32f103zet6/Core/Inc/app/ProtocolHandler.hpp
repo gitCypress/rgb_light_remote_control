@@ -14,7 +14,7 @@ namespace ProtocolHandler {
         UNKNOWN_COMMAND,
     };
 
-    enum PacketType : std::uint8_t {
+    enum class PacketType : std::uint8_t {
         CMD_SET_PIXEL = 0x01,
         CMD_SET_FRAME = 0x02,
         CMD_TOGGLE    = 0x03,

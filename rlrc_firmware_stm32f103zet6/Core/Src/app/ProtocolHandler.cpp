@@ -9,18 +9,26 @@ namespace ProtocolHandler {
     ErrorCode dispatch(const std::span<const uint8_t> packet) {
         if (packet.empty()) return ErrorCode::INVALID_BUFFER_LENGTH;
 
-        const uint8_t header = packet[0];
+        const auto header = static_cast<PacketType>(packet[0]);
 
         // payload 是除去 header 剩下的部分
         // 如果 packet 只有一个字节(只有header)，subspan(1) 会返回空视图，这是安全的
         const std::span<const uint8_t> payload = (packet.size() > 1) ? packet.subspan(1) : std::span<const uint8_t>{};
 
         switch (header) {
-            case CMD_SET_PIXEL: return handleSetPixel(payload);
-            case CMD_TOGGLE:    return handleToggle(payload);
-            case MSG_LOG:   return handleLog(payload);
-            default:            return ErrorCode::UNKNOWN_COMMAND;
+            case PacketType::CMD_SET_PIXEL:
+                return handleSetPixel(payload);
+            case PacketType::CMD_TOGGLE:
+                return handleToggle(payload);
+            case PacketType::MSG_LOG:
+                return handleLog(payload);
+            case PacketType::CMD_SET_FRAME:
+                return handleSetFrame(payload);
         }
+
+        // 从这里出来说明出现未知指令
+        // 不写在 switch 的 default，是为了保持 switch 对 enum class 的封闭性检查
+        return ErrorCode::UNKNOWN_COMMAND;
     }
 
     // --- 具体处理函数 ---
