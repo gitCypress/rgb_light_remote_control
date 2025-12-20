@@ -27,5 +27,9 @@ namespace ProtocolHandler {
      */
     ErrorCode dispatch(std::span<const uint8_t> packet);
 
+    static ErrorCode handleLog(std::span<const uint8_t> payload);
+    static ErrorCode handleSetPixel(std::span<const uint8_t> payload);
+    static ErrorCode handleSetFrame(std::span<const uint8_t> payload);
+    static ErrorCode handleToggle(std::span<const uint8_t> payload);
 }
 
