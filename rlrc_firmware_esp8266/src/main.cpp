@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Ticker.h>
+#include <WiFiUdp.h>
 
 #include "Log.hpp"
 #include "WiFiManager.h"
@@ -9,6 +10,9 @@
 // TCP server & client 对象
 WiFiServer tcpServer(config::tcpPort);
 WiFiClient tcpClient;
+
+// UDP 对象
+WiFiUDP udp;
 
 // --- 3. 设置 (Setup) ---
 void setup() {
@@ -56,6 +60,10 @@ void setup() {
     // 打印自己的 IP 地址
     Log::print("IP Address: ");
     Log::println(WiFi.localIP().toString());
+
+    // 启动 UDP 监听服务
+    udp.begin(config::udpPort);
+    Log::printf("UDP Discovery listening on port %d\n", config::udpPort);
 }
 
 void loop() {
@@ -77,6 +85,27 @@ void loop() {
             // 这里 ESP32 充当一个透明网桥，它不关心从 TCP 获取的流数据如何截止
             // 只负责将数据原模原样通过串口转发给 STM32
             Serial.write(tcpClient.read());
+        }
+    }
+
+    // --- UDP 设备发现请求广播处理---
+    if (udp.parsePacket()) {
+        // 缓冲区接收数据
+        char packetBuffer[255];
+
+        if (const int len = udp.read(packetBuffer, 255); len > 0) {
+            packetBuffer[len] = 0; // 手动添加字符串结束符，确保安全
+        }
+
+        // 校验暗号
+        if (String(packetBuffer) == config::discoveryMsg) {
+            // 发送回复
+            udp.beginPacket(udp.remoteIP(), udp.remotePort());
+            udp.print(WiFi.localIP()); // 回复 IP 地址
+            udp.endPacket();
+
+        } else {
+            // Log::printf("Ignored unknown UDP packet: %s\n", packetBuffer);
         }
     }
 }
