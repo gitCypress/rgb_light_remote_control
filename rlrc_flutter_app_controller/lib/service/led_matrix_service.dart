@@ -110,4 +110,13 @@ class LedMatrixService {
     final packet = _encoder.encodeFullFrame(data);
     _send(packet);
   }
+
+  /// 意图：发送模式切换指令
+  /// [mode] 模式ID
+  ///   0: 静态/画板模式
+  ///   1: 扩散动画模式
+  void sendSetModeCommand(int mode) {
+    final data = _encoder.encodeSetMode(mode);
+    _send(data);
+  }
 }

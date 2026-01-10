@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 /// 负责将 APP 的意图 (Intent) 转换为 STM32 能识别的二进制数据包
 class ProtocolEncoder {
-
   /// 指令 4: 开/关 (0x03) (2 字节)
   /// [CMD(0x03)] [STATE(0x00/0x01)]
   Uint8List encodeBasicToggle({required bool isOn}) {
@@ -10,7 +9,7 @@ class ProtocolEncoder {
 
     builder.addByte(0x03); // Command ID
     builder.addByte(isOn ? 0x01 : 0x00); // State
-    
+
     return builder.toBytes();
   }
 
@@ -83,5 +82,16 @@ class ProtocolEncoder {
     buffer.add(0x00);
 
     return Uint8List.fromList(buffer);
+  }
+
+/// 指令 4: 设置显示模式 (0x04)
+  /// [CMD(0x04)] [Mode ID]
+  /// Mode 0: 静态/画板模式
+  /// Mode 1: 扩散动画模式
+  Uint8List encodeSetMode(int mode) {
+    final builder = BytesBuilder();
+    builder.addByte(0x04); // Command ID
+    builder.addByte(mode.clamp(0, 255)); // Mode ID
+    return builder.toBytes();
   }
 }

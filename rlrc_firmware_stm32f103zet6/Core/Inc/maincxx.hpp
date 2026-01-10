@@ -13,5 +13,3 @@ extern "C"{
 #ifdef __cplusplus
 }
 #endif
-
-void testLights();

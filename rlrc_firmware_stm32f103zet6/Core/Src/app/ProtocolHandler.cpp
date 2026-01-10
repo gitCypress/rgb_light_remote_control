@@ -23,6 +23,8 @@ namespace ProtocolHandler {
                 return handleLog(payload);
             case PacketType::CMD_SET_FRAME:
                 return handleSetFrame(payload);
+            case PacketType::CMD_SET_MODE:
+                return handleSetMode(payload);
         }
 
         // 从这里出来说明出现未知指令
@@ -85,6 +87,26 @@ namespace ProtocolHandler {
         // 如果原日志没带换行，补一个
         if (len > 0 && logBuf[len - 1] != '\n') printf("\r\n");
 
+        return ErrorCode::OK;
+    }
+
+    static ErrorCode handleSetMode(std::span<const uint8_t> payload) {
+        if (payload.empty()) return ErrorCode::INVALID_BUFFER_LENGTH;
+
+        const uint8_t mode = payload[0];
+
+        // 这里需要一个全局变量或单例来存储当前模式
+        // 假设我们在 maincxx.hpp 中定义了全局变量 g_currentMode
+        // 或者你可以设计一个 AnimationManager 单例
+        g_currentMode.store(mode);
+
+        // 收到切换模式指令时，建议清空一下之前的显示，避免残影
+        if (mode != 0) {
+            WS2812B::getInstance().clear();
+            WS2812B::getInstance().render();
+        }
+
+        printf("[ESP->BIN] Set Mode: %d\r\n", mode);
         return ErrorCode::OK;
     }
 

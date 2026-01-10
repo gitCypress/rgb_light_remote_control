@@ -25,6 +25,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   Color _selectedColor = Colors.red; // 默认画笔颜色
   DateTime _lastSendTime = DateTime.now(); // 用于节流
 
+  // [新增] 动画模式状态
+  int _currentMode = 0; // 0: 画板模式, 1: 扩散动画
+
+  // [新增] 亮度控制
+  double _brightness = 1.0; // 亮度比例 0.0-1.0
+
   @override
   void initState() {
     super.initState();
@@ -118,6 +124,66 @@ class _HomePageState extends ConsumerState<HomePage> {
 
             // ================== 2. 功能区域 (仅连接后显示) ==================
             if (isConnected) ...[
+              // 2.0 模式选择器
+              const Text('🎭 显示模式', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment<int>(
+                    value: 0,
+                    label: Text('画板模式'),
+                    icon: Icon(Icons.brush),
+                  ),
+                  ButtonSegment<int>(
+                    value: 1,
+                    label: Text('扩散动画'),
+                    icon: Icon(Icons.animation),
+                  ),
+                ],
+                selected: {_currentMode},
+                onSelectionChanged: (Set<int> newSelection) {
+                  setState(() {
+                    _currentMode = newSelection.first;
+                  });
+                  // 发送模式切换指令
+                  ref.read(ledMatrixServiceProvider).sendSetModeCommand(_currentMode);
+                },
+              ),
+              const Divider(height: 32),
+
+              // 2.0.5 亮度控制
+              const Text('💡 亮度调节', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.brightness_low, size: 20),
+                  Expanded(
+                    child: Slider(
+                      value: _brightness,
+                      min: 0.0,
+                      max: 1.0,
+                      divisions: 20,
+                      label: '${(_brightness * 100).round()}%',
+                      onChanged: (value) {
+                        setState(() {
+                          _brightness = value;
+                        });
+                        // 亮度改变时重新发送当前画面
+                        if (_currentMode == 0) {
+                          _throttledSend(force: true);
+                        }
+                      },
+                    ),
+                  ),
+                  const Icon(Icons.brightness_high, size: 20),
+                  const SizedBox(width: 8),
+                  Text('${(_brightness * 100).round()}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const Divider(height: 32),
+
+              // 2.1 画板功能 (仅在画板模式下显示)
+              if (_currentMode == 0) ...[
               const Text('🎨 像素画板 (5x5)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
 
@@ -180,6 +246,35 @@ class _HomePageState extends ConsumerState<HomePage> {
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('清空画板'),
               ),
+              ], // 画板模式结束
+
+              // 2.2 动画模式说明 (仅在动画模式下显示)
+              if (_currentMode == 1) ...[
+                const Text('✨ 预设动画', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.info_outline, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Text('扩散动画正在运行', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '彩色波纹从中心向外扩散，颜色随时间变化。\n动画由STM32自动生成，无需APP持续发送数据。',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ],
         ),
@@ -251,9 +346,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     const gridSize = 5;
 
     // 获取触摸点相对于 Grid 的坐标
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    // 注意：需要找到 GridView 的 RenderBox，这里简化处理，假设 SizedBox 是 body 的一部分
-    // 实际上 GestureDetector 包裹了 SizedBox，localPosition 就是相对于 300x300 的
+    // 注意：GestureDetector 包裹了 SizedBox，localPosition 就是相对于 300x300 的
     final localPos = details.localPosition;
 
     if (localPos.dx < 0 || localPos.dx >= boardSize || localPos.dy < 0 || localPos.dy >= boardSize) {
@@ -292,11 +385,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       _lastSendTime = now;
 
       // 准备数据：将 List<Color> 转换为 List<int> (R,G,B, R,G,B...)
+      // 并应用亮度缩放
       final List<int> frameData = [];
       for (var color in _pixels) {
-        frameData.add(color.red);
-        frameData.add(color.green);
-        frameData.add(color.blue);
+        frameData.add((color.red * _brightness).round().clamp(0, 255));
+        frameData.add((color.green * _brightness).round().clamp(0, 255));
+        frameData.add((color.blue * _brightness).round().clamp(0, 255));
       }
 
       // 调用 Service
