@@ -32,8 +32,9 @@ public:
     static constexpr uint16_t BITS_PER_LED = 24;
 
     // 重置码
-    // 需要 >50µs 的低电平，用 50 个 1.25µs 的低电平实现
-    static constexpr uint16_t RESET_PULSES = 50;
+    // 需要 >50µs 的低电平，用更多低电平实现
+    // 国产WS2812B克隆版通常需要更长的reset时间来避免串色
+    static constexpr uint16_t RESET_PULSES = 100; // 增加到100个脉冲 (约125µs)
 
     // PWM 缓冲区的总大小
     // 灯数 * 24 bit + RESET

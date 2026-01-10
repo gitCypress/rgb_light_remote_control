@@ -81,6 +81,11 @@ void WS2812B::render() {
         }
     }
 
+    // 填充reset信号 - 确保所有reset脉冲都是0
+    for (uint16_t i = buffer_index; i < PWM_BUFFER_SIZE; ++i) {
+        pwm_buffer[i] = 0;
+    }
+
     // 启动 DMA 传输
     const HAL_StatusTypeDef status = HAL_TIM_PWM_Start_DMA(
         &htim1, // TIM 句柄
