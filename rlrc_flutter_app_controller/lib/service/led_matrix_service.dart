@@ -92,4 +92,31 @@ class LedMatrixService {
     final data = _encoder.encodeSetPixel(x: x, y: y, r: r, g: g, b: b);
     _send(data);
   }
+
+  /// 意图：发送全屏颜色数据 (画板同步)
+  /// [colors] 必须是长度为 25 的 List<Color> (对应 5x5)
+  /// 或者是已经处理好的 Uint8List (长度 75)
+  void sendFullFrame(List<int> pixelBytes) {
+    // 1. 安全检查：确保数据长度正确 (5*5*3 = 75)
+    if (pixelBytes.length != 75) {
+      print("Error: Frame data length must be 75 bytes (5x5x3).");
+      return;
+    }
+
+    // 2. 转换为 Uint8List
+    final data = Uint8List.fromList(pixelBytes);
+
+    // 3. 编码并发送
+    final packet = _encoder.encodeFullFrame(data);
+    _send(packet);
+  }
+
+  /// 意图：发送模式切换指令
+  /// [mode] 模式ID
+  ///   0: 静态/画板模式
+  ///   1: 扩散动画模式
+  void sendSetModeCommand(int mode) {
+    final data = _encoder.encodeSetMode(mode);
+    _send(data);
+  }
 }

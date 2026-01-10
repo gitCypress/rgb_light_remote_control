@@ -3,6 +3,7 @@
 // //
 
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <span>
 
@@ -18,8 +19,11 @@ namespace ProtocolHandler {
         CMD_SET_PIXEL = 0x01,
         CMD_SET_FRAME = 0x02,
         CMD_TOGGLE    = 0x03,
+        CMD_SET_MODE  = 0x04,
         MSG_LOG   = 0xFE,
     };
+
+    inline std::atomic_uint8_t g_currentMode;
 
     /**
      * @brief 分发处理已解码的数据包
@@ -31,5 +35,6 @@ namespace ProtocolHandler {
     static ErrorCode handleSetPixel(std::span<const uint8_t> payload);
     static ErrorCode handleSetFrame(std::span<const uint8_t> payload);
     static ErrorCode handleToggle(std::span<const uint8_t> payload);
+    static ErrorCode handleSetMode(std::span<const uint8_t> payload);
 }
 
