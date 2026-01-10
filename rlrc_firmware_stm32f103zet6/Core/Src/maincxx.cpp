@@ -1,9 +1,12 @@
 #include "maincxx.hpp"
 #include <array>
 #include <cstdio>
+#include <cstring>
+
 #include "ProtocolHandler.hpp"
 #include "esp8266.hpp"
 #include "uart_receiver.hpp"
+#include "usart.h"
 #include "ws2812b.hpp"
 
 extern "C" void ws2812b_dma_complete_callback() { WS2812B::getInstance().on_dma_transfer_complete(); }
@@ -27,7 +30,7 @@ void maincxx() {
     // __HAL_UART_CLEAR_IDLEFLAG(&huart3);// 清除空闲标志
 
     // 存储 uart_receiver 获得的包
-    constexpr uint16_t scratchBufferSize = 256;
+    constexpr uint16_t scratchBufferSize = 4096;
     std::array<uint8_t, scratchBufferSize> scratchBuffer{};
 
     while (true) {
